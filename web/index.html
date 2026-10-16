@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guerra de Clusters</title>
+  <style>
+    :root { --laranja: #ff9900; --verde: #1d8102; --fundo: #0f1419; --texto: #f5f5f5; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: var(--fundo); color: var(--texto);
+      font: 18px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center;
+    }
+    main { padding: 24px 16px; max-width: 480px; }
+    h1 { font-size: 2rem; margin: 0 0 16px; }
+    .equipes { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+    .equipe { flex: 1; padding: 16px 8px; border-radius: 12px; font-weight: 700; }
+    .laranja { background: var(--laranja); color: #111; }
+    .verde { background: var(--verde); }
+    #status { opacity: .8; font-size: .95rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Guerra de Clusters</h1>
+    <div class="equipes">
+      <div class="equipe laranja">Laranja Lambda</div>
+      <div class="equipe verde">Verde DynamoDB</div>
+    </div>
+    <p id="status">Conectando à nuvem…</p>
+  </main>
+  <script>
+    fetch('/api/estado')
+      .then((r) => r.json())
+      .then((e) => {
+        document.getElementById('status').textContent =
+          `API respondendo · rodada: ${e.rodadaId ?? 'nenhuma'} · relógio do servidor: ${new Date(e.agoraServidor).toLocaleTimeString('pt-BR')}`;
+      })
+      .catch(() => { document.getElementById('status').textContent = 'Sem conexão com a API.'; });
+  </script>
+</body>
+</html>

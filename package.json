@@ -1,0 +1,14 @@
+{
+  "name": "guerra-de-clusters",
+  "private": true,
+  "type": "module",
+  "description": "Cabo de guerra serverless ao vivo — AWS Student Builder Group at UNDB",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "deploy": "node scripts/deploy.mjs",
+    "remover": "node scripts/remover.mjs"
+  }
+}
