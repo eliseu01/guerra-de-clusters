@@ -1,0 +1,35 @@
+:root {
+  --laranja: #ff9900;
+  --laranja-texto: #111;
+  --verde: #1d8102;
+  --verde-texto: #fff;
+  --fundo: #0f1419;
+  --painel: #1b232c;
+  --texto: #f5f5f5;
+  --suave: #aab4bf;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font: 18px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1 { margin: 0; font-size: 1.5rem; letter-spacing: .02em; }
+
+.oculto { display: none !important; }
+
+.suave { color: var(--suave); }
+
+.laranja { background: var(--laranja); color: var(--laranja-texto); }
+.verde { background: var(--verde); color: var(--verde-texto); }
+
+.marca-laranja { color: var(--laranja); }
+.marca-verde { color: #3fbf1f; }
+
+button { font: inherit; cursor: pointer; }

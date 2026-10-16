@@ -2,42 +2,200 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0f1419">
   <title>Guerra de Clusters</title>
+  <link rel="stylesheet" href="/estilo.css">
   <style>
-    :root { --laranja: #ff9900; --verde: #1d8102; --fundo: #0f1419; --texto: #f5f5f5; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
-      background: var(--fundo); color: var(--texto);
-      font: 18px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center;
+    body { display: flex; flex-direction: column; min-height: 100dvh; text-align: center; transition: background .3s; }
+    body.laranja .faixa, body.verde .faixa { background: rgba(0, 0, 0, .18); }
+    header { padding: 14px 16px; }
+    main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px; gap: 16px; }
+    .faixa { padding: 10px 16px; border-radius: 999px; font-weight: 700; }
+    .grande { font-size: 1.6rem; font-weight: 800; margin: 0; }
+    .placar { font-size: 1.2rem; font-weight: 700; }
+    #numeroContagem { font-size: 9rem; font-weight: 900; line-height: 1; }
+    #cronometro { font-size: 3rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+    #botao {
+      width: min(78vw, 340px); aspect-ratio: 1; border-radius: 50%;
+      border: 6px solid rgba(255, 255, 255, .85); background: rgba(0, 0, 0, .25); color: inherit;
+      font-size: 2.6rem; font-weight: 900; letter-spacing: .04em;
+      touch-action: manipulation; user-select: none; -webkit-user-select: none;
+      transition: transform .05s;
     }
-    main { padding: 24px 16px; max-width: 480px; }
-    h1 { font-size: 2rem; margin: 0 0 16px; }
-    .equipes { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
-    .equipe { flex: 1; padding: 16px 8px; border-radius: 12px; font-weight: 700; }
-    .laranja { background: var(--laranja); color: #111; }
-    .verde { background: var(--verde); }
-    #status { opacity: .8; font-size: .95rem; }
+    #botao:active, #botao.tocou { transform: scale(.94); }
+    #meusToques { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    #erro { color: #ffb4a8; min-height: 1.4em; font-size: .95rem; }
   </style>
 </head>
 <body>
+  <header><h1>Guerra de Clusters</h1></header>
+
   <main>
-    <h1>Guerra de Clusters</h1>
-    <div class="equipes">
-      <div class="equipe laranja">Laranja Lambda</div>
-      <div class="equipe verde">Verde DynamoDB</div>
-    </div>
-    <p id="status">Conectando à nuvem…</p>
+    <section id="telaEntrando"><p class="grande">Entrando…</p></section>
+
+    <section id="telaEspera" class="oculto">
+      <p>Você é da equipe</p>
+      <p class="grande" id="nomeEquipe"></p>
+      <p class="faixa" style="margin-top:24px">Aguardando a largada</p>
+      <p class="placar" id="placarEspera"></p>
+    </section>
+
+    <section id="telaContagem" class="oculto">
+      <div id="numeroContagem">3</div>
+      <p class="grande">Prepare o dedo!</p>
+    </section>
+
+    <section id="telaJogo" class="oculto">
+      <div id="cronometro">45</div>
+      <button id="botao" type="button">PUXA!</button>
+      <div id="meusToques">0 toques</div>
+    </section>
+
+    <section id="telaFim" class="oculto">
+      <p class="grande" id="resultado"></p>
+      <p class="placar" id="placarFim"></p>
+      <p id="meusToquesFim"></p>
+      <p class="faixa">Olhe o telão 👀</p>
+    </section>
+
+    <p id="erro" role="status"></p>
   </main>
+
+  <script src="/comum.js"></script>
   <script>
-    fetch('/api/estado')
-      .then((r) => r.json())
-      .then((e) => {
-        document.getElementById('status').textContent =
-          `API respondendo · rodada: ${e.rodadaId ?? 'nenhuma'} · relógio do servidor: ${new Date(e.agoraServidor).toLocaleTimeString('pt-BR')}`;
-      })
-      .catch(() => { document.getElementById('status').textContent = 'Sem conexão com a API.'; });
+    const { api, agora, segundosAte, numero, NOMES } = Guerra;
+    const $ = (id) => document.getElementById(id);
+    const CHAVE = 'guerra-jogador';
+
+    let eu = null;          // { eventoId, jogadorId, equipe }
+    let estado = null;      // último estado do servidor
+    let rodadaId = null;
+    let seq = 0, acumulado = 0, pendente = null, enviando = false, meusToques = 0;
+
+    try { eu = JSON.parse(localStorage.getItem(CHAVE)); } catch {}
+
+    function mostrar(tela) {
+      for (const t of ['telaEntrando', 'telaEspera', 'telaContagem', 'telaJogo', 'telaFim']) $(t).classList.toggle('oculto', t !== tela);
+    }
+
+    // Status visto pelo celular: o servidor manda os horários, o celular decide a tela pelo relógio corrigido.
+    function statusLocal() {
+      if (!estado || !estado.rodadaId || !estado.iniciaEm) return 'aguardando';
+      const t = agora();
+      if (t < estado.iniciaEm) return 'contagem';
+      if (t < estado.terminaEm) return 'jogando';
+      return 'encerrada';
+    }
+
+    async function garantirEquipe() {
+      // Sem evento ainda no estado (resposta de cache antiga): mantém a equipe e não entra duas vezes.
+      if (eu && (!estado.eventoId || eu.eventoId === estado.eventoId)) return;
+      eu = await api('/api/entrar', { method: 'POST' });
+      try { localStorage.setItem(CHAVE, JSON.stringify(eu)); } catch {}
+    }
+
+    async function atualizarEstado(calibrar = false) {
+      // ?c=… fura o cache do CloudFront só nas medições de relógio.
+      estado = await api(calibrar ? `/api/estado?c=${Math.random().toString(36).slice(2)}` : '/api/estado', { calibrar });
+      if (estado.rodadaId !== rodadaId) {
+        rodadaId = estado.rodadaId; seq = 0; acumulado = 0; pendente = null; meusToques = 0;
+      }
+      await garantirEquipe();
+      document.body.className = eu.equipe;
+      $('nomeEquipe').textContent = NOMES[eu.equipe];
+      $('erro').textContent = '';
+    }
+
+    async function enviarLote() {
+      if (enviando) return;
+      if (!pendente) {
+        if (acumulado === 0) return;
+        const toques = Math.min(acumulado, 25);
+        acumulado -= toques;
+        pendente = { seq: ++seq, toques };
+      }
+      enviando = true;
+      try {
+        const r = await api('/api/puxar', {
+          method: 'POST', calibrar: true,
+          body: JSON.stringify({ rodadaId, jogadorId: eu.jogadorId, equipe: eu.equipe, ...pendente }),
+        });
+        if (!r.aceito && r.motivo === 'rapido-demais') acumulado += pendente.toques; // vai no próximo lote
+        if (r.terminaEm) estado.terminaEm = r.terminaEm; // encerrada antes pelo admin
+        pendente = null;
+      } catch {
+        // Falha de rede: o mesmo lote (mesmo seq) é reenviado; o servidor não conta duas vezes.
+      } finally {
+        enviando = false;
+      }
+    }
+
+    function desenhar() {
+      const s = statusLocal();
+      if (!eu) return mostrar('telaEntrando');
+      if (s === 'aguardando') {
+        const p = estado.participantes || {};
+        $('placarEspera').innerHTML = `<span>${numero(p.laranja)} Laranja</span> × <span>${numero(p.verde)} Verde</span>`;
+        return mostrar('telaEspera');
+      }
+      if (s === 'contagem') {
+        $('numeroContagem').textContent = Math.min(3, segundosAte(estado.iniciaEm)) || 'JÁ!';
+        return mostrar('telaContagem');
+      }
+      if (s === 'jogando') {
+        $('cronometro').textContent = segundosAte(estado.terminaEm);
+        return mostrar('telaJogo');
+      }
+      if (estado.status === 'encerrada') {
+        const e = estado.equipes;
+        $('resultado').textContent = estado.vencedora === 'empate' ? 'Empate!' : `Vitória da ${NOMES[estado.vencedora]}!`;
+        $('placarFim').textContent = `${numero(e.laranja.toques)} × ${numero(e.verde.toques)} toques`;
+        $('meusToquesFim').textContent = meusToques
+          ? `Você puxou ${numero(meusToques)} vezes pela ${NOMES[eu.equipe]}.`
+          : `Você é da ${NOMES[eu.equipe]}. Aguarde a próxima rodada!`;
+      } else {
+        $('resultado').textContent = 'Fim! Contando os toques…';
+        $('placarFim').textContent = '';
+        $('meusToquesFim').textContent = '';
+      }
+      mostrar('telaFim');
+    }
+
+    $('botao').addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      if (statusLocal() !== 'jogando') return;
+      acumulado++; meusToques++;
+      $('meusToques').textContent = `${numero(meusToques)} toques`;
+      $('botao').classList.add('tocou');
+      setTimeout(() => $('botao').classList.remove('tocou'), 60);
+    });
+
+    let ultimaConsulta = 0, ultimaCalibragem = 0, ultimoLote = 0;
+    async function ciclo() {
+      const t = Date.now();
+      const s = statusLocal();
+      try {
+        if (s === 'jogando') {
+          if (t - ultimoLote >= 1000) { ultimoLote = t; enviarLote(); } // 1 requisição por segundo (RF6)
+        } else {
+          if (pendente || acumulado) enviarLote(); // último lote logo após o apito
+          const intervalo = s === 'encerrada' && estado.status !== 'encerrada' ? 1500 : 1000;
+          if (t - ultimaConsulta >= intervalo) {
+            ultimaConsulta = t;
+            const calibrar = t - ultimaCalibragem >= 15000;
+            if (calibrar) ultimaCalibragem = t;
+            await atualizarEstado(calibrar);
+          }
+        }
+      } catch (erro) {
+        $('erro').textContent = 'Conexão instável… tentando de novo.';
+      }
+      desenhar();
+      setTimeout(ciclo, 100);
+    }
+
+    ciclo();
   </script>
 </body>
 </html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Guerra de Clusters · Admin</title>
+  <link rel="stylesheet" href="/estilo.css">
+  <style>
+    body { padding: 16px; max-width: 640px; margin: 0 auto; }
+    h1 { margin-bottom: 16px; }
+    .bloco { background: var(--painel); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .acoes button { padding: 18px 8px; border: 0; border-radius: 10px; font-weight: 800; font-size: 1.05rem; }
+    #btnRodada { background: #3a4654; color: #fff; }
+    #btnIniciar { background: var(--verde); color: #fff; }
+    #btnEncerrar { background: #c0392b; color: #fff; }
+    #btnEvento { background: transparent; color: var(--suave); border: 1px solid #3a4654 !important; }
+    input { width: 100%; padding: 12px; font: inherit; border-radius: 8px; border: 1px solid #3a4654; background: #0b0f13; color: var(--texto); }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; }
+    dt { color: var(--suave); }
+    dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+    #retorno { min-height: 1.4em; margin-top: 12px; }
+    a { color: var(--laranja); }
+  </style>
+</head>
+<body>
+  <h1>Painel admin</h1>
+
+  <div class="bloco" id="blocoToken">
+    <label for="token">Token do admin</label>
+    <input id="token" type="password" autocomplete="off" placeholder="Cole o token de .segredos/">
+  </div>
+
+  <div class="bloco">
+    <div class="acoes">
+      <button id="btnRodada" type="button">Nova rodada</button>
+      <button id="btnIniciar" type="button">Iniciar (3, 2, 1)</button>
+      <button id="btnEncerrar" type="button">Encerrar agora</button>
+      <button id="btnEvento" type="button">Zerar evento</button>
+    </div>
+    <div id="retorno" role="status"></div>
+  </div>
+
+  <div class="bloco">
+    <dl>
+      <dt>Status</dt><dd id="vStatus">—</dd>
+      <dt>Tempo</dt><dd id="vTempo">—</dd>
+      <dt>Rodada</dt><dd id="vRodada">—</dd>
+      <dt>Na equipe</dt><dd id="vGente">—</dd>
+      <dt>Toques</dt><dd id="vToques">—</dd>
+      <dt>Pico</dt><dd id="vPico">—</dd>
+      <dt>Evento</dt><dd id="vEvento">—</dd>
+    </dl>
+  </div>
+
+  <p><a href="/telao.html" target="_blank">Abrir telão</a> · <a href="/" target="_blank">Abrir jogo</a></p>
+
+  <script src="/comum.js"></script>
+  <script>
+    const { api, agora, segundosAte, numero } = Guerra;
+    const $ = (id) => document.getElementById(id);
+    const CHAVE = 'guerra-admin-token';
+    let estado = null;
+
+    try { $('token').value = sessionStorage.getItem(CHAVE) || ''; } catch {}
+    $('token').addEventListener('change', () => { try { sessionStorage.setItem(CHAVE, $('token').value.trim()); } catch {} });
+
+    async function acao(rota, rotulo, confirmar) {
+      if (confirmar && !confirm(confirmar)) return;
+      $('retorno').textContent = `${rotulo}…`;
+      try {
+        await api(`/api/admin/${rota}`, { method: 'POST', token: $('token').value.trim() });
+        $('retorno').textContent = `${rotulo}: feito.`;
+        consultar();
+      } catch (erro) {
+        $('retorno').textContent = erro.status === 401 ? 'Token inválido.' : erro.message;
+      }
+    }
+
+    $('btnRodada').onclick = () => acao('rodada', 'Nova rodada');
+    $('btnIniciar').onclick = () => acao('iniciar', 'Largada');
+    $('btnEncerrar').onclick = () => acao('encerrar', 'Encerrar', 'Encerrar a rodada agora?');
+    $('btnEvento').onclick = () => acao('novo-evento', 'Zerar evento',
+      'Zerar o evento? Todos os celulares entram de novo e as equipes são refeitas. As rodadas antigas continuam guardadas.');
+
+    function desenhar() {
+      if (!estado) return;
+      const t = agora();
+      let status = estado.status;
+      if (estado.iniciaEm) status = t < estado.iniciaEm ? 'contagem' : t < estado.terminaEm ? 'jogando' : status;
+      $('vStatus').textContent = status;
+      $('vTempo').textContent = status === 'contagem' ? `largada em ${segundosAte(estado.iniciaEm)} s`
+        : status === 'jogando' ? `${segundosAte(estado.terminaEm)} s restantes` : '—';
+      $('vRodada').textContent = estado.rodadaId || 'nenhuma';
+      const p = estado.participantes || {}, e = estado.equipes || {};
+      $('vGente').textContent = `${numero(p.laranja)} Laranja × ${numero(p.verde)} Verde`;
+      $('vToques').textContent = `${numero(e.laranja?.toques)} × ${numero(e.verde?.toques)}`;
+      $('vPico').textContent = estado.picoReqPorSeg != null ? `${numero(estado.picoReqPorSeg)} req/s` : '—';
+      $('vEvento').textContent = estado.eventoId || '—';
+    }
+
+    async function consultar() {
+      try { estado = await api('/api/estado?telao=1', { calibrar: true }); } catch {}
+    }
+
+    consultar();
+    setInterval(consultar, 1000);
+    setInterval(desenhar, 200);
+  </script>
+</body>
+</html>

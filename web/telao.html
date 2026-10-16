@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guerra de Clusters · Telão</title>
+  <link rel="stylesheet" href="/estilo.css">
+  <style>
+    /* Legível a 15 m (RNF7): tudo em vw, contraste alto. */
+    body { display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; padding: 2vw 3vw; gap: 2vw; overflow: hidden; }
+    header { display: flex; justify-content: space-between; align-items: baseline; }
+    header h1 { font-size: 3vw; }
+    #mensagem { font-size: 2.2vw; font-weight: 700; }
+    .arena { display: grid; grid-template-columns: 1fr 3fr 1fr; align-items: center; gap: 2vw; }
+    .equipe { border-radius: 1.5vw; padding: 2vw 1vw; text-align: center; }
+    .equipe .nome { font-size: 2.2vw; font-weight: 800; }
+    .equipe .toques { font-size: 6vw; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .equipe .gente { font-size: 1.6vw; font-weight: 600; }
+    .campo { position: relative; height: 16vw; }
+    .centro { position: absolute; left: 50%; top: 0; bottom: 0; border-left: .4vw dashed var(--suave); }
+    .corda { position: absolute; left: 0; right: 0; top: 50%; height: 1.4vw; transform: translateY(-50%);
+             background: repeating-linear-gradient(60deg, #c8a165 0 1vw, #a67c3d 1vw 2vw); border-radius: 1vw; }
+    #no { position: absolute; top: 50%; left: 50%; width: 5vw; height: 5vw; border-radius: 50%;
+          background: #fff; border: .6vw solid #c8a165; transform: translate(-50%, -50%);
+          transition: left .45s ease-out; box-shadow: 0 0 2vw rgba(255, 255, 255, .35); }
+    #grande { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12vw; font-weight: 900;
+              text-shadow: 0 .5vw 2vw #000; pointer-events: none; font-variant-numeric: tabular-nums; }
+    footer { display: flex; justify-content: space-between; align-items: center; font-size: 2vw; }
+    #endereco { font-weight: 800; color: #fff; }
+    #numeros { font-size: 1.8vw; }
+    .vitoria { animation: pulsa 1s ease-in-out infinite alternate; }
+    @keyframes pulsa { to { transform: scale(1.06); } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Guerra de Clusters</h1>
+    <div id="mensagem">Conectando…</div>
+  </header>
+
+  <section class="arena">
+    <div class="equipe laranja" id="painelLaranja">
+      <div class="nome">Laranja Lambda</div>
+      <div class="toques" id="toquesLaranja">0</div>
+      <div class="gente" id="genteLaranja">0 na equipe</div>
+    </div>
+    <div class="campo">
+      <div class="corda"></div>
+      <div class="centro"></div>
+      <div id="no"></div>
+      <div id="grande"></div>
+    </div>
+    <div class="equipe verde" id="painelVerde">
+      <div class="nome">Verde DynamoDB</div>
+      <div class="toques" id="toquesVerde">0</div>
+      <div class="gente" id="genteVerde">0 na equipe</div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Entre em <span id="endereco"></span></div>
+    <div id="numeros" class="suave"></div>
+  </footer>
+
+  <script src="/comum.js"></script>
+  <script>
+    const { api, agora, segundosAte, numero, NOMES } = Guerra;
+    const $ = (id) => document.getElementById(id);
+    let estado = null;
+
+    $('endereco').textContent = location.host;
+
+    function statusLocal() {
+      if (!estado?.rodadaId || !estado.iniciaEm) return 'aguardando';
+      const t = agora();
+      if (t < estado.iniciaEm) return 'contagem';
+      if (t < estado.terminaEm) return 'jogando';
+      return 'encerrada';
+    }
+
+    function desenhar() {
+      if (!estado) return;
+      const s = statusLocal();
+      const { equipes = {}, participantes = {} } = estado;
+      const emJogo = s === 'jogando' || s === 'encerrada';
+
+      $('toquesLaranja').textContent = numero(equipes.laranja?.toques);
+      $('toquesVerde').textContent = numero(equipes.verde?.toques);
+      // Na espera: quantos entraram. No jogo: quantos estão tocando.
+      $('genteLaranja').textContent = emJogo ? `${numero(equipes.laranja?.ativos)} puxando` : `${numero(participantes.laranja)} na equipe`;
+      $('genteVerde').textContent = emJogo ? `${numero(equipes.verde?.ativos)} puxando` : `${numero(participantes.verde)} na equipe`;
+
+      // posicaoCorda: 1 = Laranja (esquerda) puxou tudo, 0 = Verde (direita).
+      const p = estado.posicaoCorda ?? 0.5;
+      $('no').style.left = `${5 + (1 - p) * 90}%`;
+
+      const grande = $('grande');
+      $('painelLaranja').classList.remove('vitoria');
+      $('painelVerde').classList.remove('vitoria');
+      $('numeros').textContent = '';
+
+      if (s === 'aguardando') {
+        $('mensagem').textContent = 'Escaneie o QR e descubra sua equipe';
+        grande.textContent = '';
+      } else if (s === 'contagem') {
+        $('mensagem').textContent = 'Preparem-se…';
+        grande.textContent = Math.min(3, segundosAte(estado.iniciaEm)) || 'JÁ!';
+      } else if (s === 'jogando') {
+        $('mensagem').textContent = 'PUXEM!';
+        grande.textContent = segundosAte(estado.terminaEm);
+      } else if (estado.status !== 'encerrada') {
+        $('mensagem').textContent = 'Fim! Contando os últimos toques…';
+        grande.textContent = '';
+      } else {
+        const v = estado.vencedora;
+        $('mensagem').textContent = v === 'empate' ? 'Empate!' : `Vitória da ${NOMES[v]}!`;
+        grande.textContent = '';
+        if (v !== 'empate') $(v === 'laranja' ? 'painelLaranja' : 'painelVerde').classList.add('vitoria');
+        const total = (equipes.laranja?.toques ?? 0) + (equipes.verde?.toques ?? 0);
+        const pessoas = (equipes.laranja?.ativos ?? 0) + (equipes.verde?.ativos ?? 0);
+        $('numeros').textContent =
+          `${numero(total)} toques · ${numero(pessoas)} participantes · pico de ${numero(estado.picoReqPorSeg)} requisições/s`;
+      }
+    }
+
+    let ultimaCalibragem = 0;
+    async function consultar() {
+      try {
+        const calibrar = Date.now() - ultimaCalibragem > 10000;
+        if (calibrar) ultimaCalibragem = Date.now();
+        estado = await api('/api/estado?telao=1', { calibrar });
+      } catch {
+        $('mensagem').textContent = 'Sem conexão… tentando de novo';
+      }
+      setTimeout(consultar, 500); // RNF2: atraso percebido < 1 s
+    }
+
+    consultar();
+    setInterval(desenhar, 100);
+  </script>
+</body>
+</html>

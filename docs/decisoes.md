@@ -14,3 +14,5 @@
 | 16/10/2026 | A6 | Acesso do Claude Code por usuário IAM `guerra-claude` com limite de permissões (`infra/acesso.yaml`) | Modo automático sem expor chave e sem poder agir fora dos recursos `guerra-*` |
 | 16/10/2026 | A7 | Repositório só local por enquanto; remoto (GitLab ou GitHub do grupo) até o ensaio | Não bloqueia o MVP; o remoto serve para backup, Core Team, artigo e workshop |
 | 16/10/2026 | O1 | Cota de execuções simultâneas da Lambda em `sa-east-1` era 10 (conta nova); pedido de aumento para 1000 | O pico estimado (10–15) passaria da cota e geraria erros 429 no meio do jogo |
+| 16/10/2026 | O2 | Pedido de cota aberto pelo console (caso 179218464300864, 1000 execuções simultâneas) | O usuário `guerra-claude` não pode criar o papel de serviço do Service Quotas; o primeiro pedido é feito pelo administrador |
+| 16/10/2026 | C1 | Critério "deploy → delete → deploy" cumprido na pilha `dev` (I1) | Feito cedo, enquanto a pilha ainda é pequena; a pilha `evento` não passa por esse teste para não trocar o domínio do QR |

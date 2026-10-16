@@ -3,6 +3,15 @@
 > Versão 1 · 16/10/2026 · validado contra `02-escopo.md` (RF1–RF9, RNF1–RNF8, critérios de aceite).
 > Orçamento de tempo real: ~13 h até o evento (≈4 h/semana). Tudo abaixo cabe nisso porque **não há servidor, fila, agendador nem framework** — e porque cada incremento termina com algo jogável no celular.
 
+## Andamento (atualizado em 16/10)
+
+| Incremento | Situação |
+|---|---|
+| I0 · Ambiente | ✅ Acesso (`infra/acesso.yaml`), orçamento ativo, repositório local. ⏳ Cota da Lambda: 10 → pedido de 1000 (caso 179218464300864) |
+| I1 · Esqueleto | ✅ No ar na `dev`; "deploy → delete → deploy" cumprido |
+| I2 · MVP | ✅ API, jogador, telão e admin na `dev`; rodada simulada com 8 jogadores: 0 % de perda, sem erros. ⏳ Falta: 2 celulares reais pelo 4G e subir a pilha `evento` |
+| I3 · Robustez | Simulador pronto (`npm run carga`); carga com 150 depende da cota |
+
 ---
 
 ## 1. Veredito sobre a arquitetura
