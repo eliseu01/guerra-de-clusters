@@ -9,7 +9,8 @@
 |---|---|
 | I0 · Ambiente | ✅ Acesso (`infra/acesso.yaml`), orçamento ativo, repositório local. ⏳ Cota da Lambda: 10 → pedido de 1000 (caso 179218464300864) |
 | I1 · Esqueleto | ✅ No ar na `dev`; "deploy → delete → deploy" cumprido |
-| I2 · MVP | ✅ API, jogador, telão e admin na `dev`; rodada simulada com 8 jogadores: 0 % de perda, sem erros. ⏳ Falta: 2 celulares reais pelo 4G e subir a pilha `evento` |
+| I2 · MVP | ✅ API, jogador, telão e admin na `dev` e na `evento`; rodada simulada com 8 jogadores: 0 % de perda, sem erros. ⏳ Falta: 2 celulares reais pelo 4G |
+| Marco 26/10 · URL | ✅ Antecipado para 16/10: https://d3ep7r8qyb7s2q.cloudfront.net (QR em `qr/`) |
 | I3 · Robustez | Simulador pronto (`npm run carga`); carga com 150 depende da cota |
 
 ---

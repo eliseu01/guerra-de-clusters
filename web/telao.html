@@ -28,6 +28,11 @@
     footer { display: flex; justify-content: space-between; align-items: center; font-size: 2vw; }
     #endereco { font-weight: 800; color: #fff; }
     #numeros { font-size: 1.8vw; }
+    /* Na espera, o QR toma o lugar da corda (só existe na pilha "evento"; ver scripts/deploy.mjs). */
+    #qr { display: none; }
+    body.espera.com-qr .campo { height: auto; display: grid; place-items: center; }
+    body.espera.com-qr .corda, body.espera.com-qr .centro, body.espera.com-qr #no { display: none; }
+    body.espera.com-qr #qr { display: block; width: 26vw; background: #fff; padding: 1vw; border-radius: 1vw; }
     .vitoria { animation: pulsa 1s ease-in-out infinite alternate; }
     @keyframes pulsa { to { transform: scale(1.06); } }
   </style>
@@ -48,6 +53,8 @@
       <div class="corda"></div>
       <div class="centro"></div>
       <div id="no"></div>
+      <img id="qr" src="/qr.svg" alt="QR code para entrar no jogo"
+           onload="document.body.classList.add('com-qr')" onerror="this.remove()">
       <div id="grande"></div>
     </div>
     <div class="equipe verde" id="painelVerde">
@@ -95,6 +102,7 @@
       $('no').style.left = `${5 + (1 - p) * 90}%`;
 
       const grande = $('grande');
+      document.body.classList.toggle('espera', s === 'aguardando');
       $('painelLaranja').classList.remove('vitoria');
       $('painelVerde').classList.remove('vitoria');
       $('numeros').textContent = '';

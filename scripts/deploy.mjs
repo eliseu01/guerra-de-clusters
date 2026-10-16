@@ -32,6 +32,10 @@ rodar(
 
 const saidas = saidasDaPilha(pilha);
 rodar(`aws s3 sync web s3://${saidas.Bucket} --delete --cache-control max-age=60 ${alvo()}`);
+// QR do telão: só a pilha que tem um QR gerado (qr/evento.svg) o publica; na dev o telão segue sem QR.
+if (existsSync(`qr/${estagio}.svg`)) {
+  rodar(`aws s3 cp qr/${estagio}.svg s3://${saidas.Bucket}/qr.svg --cache-control max-age=60 ${alvo()}`);
+}
 rodar(
   `aws cloudfront create-invalidation --distribution-id ${saidas.DistribuicaoId} --paths "/*" --query Invalidation.Id --output text ${alvo()}`,
 );
