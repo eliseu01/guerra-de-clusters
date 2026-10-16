@@ -1,0 +1,66 @@
+{
+  "env": {
+    "AWS_PROFILE": "guerra",
+    "AWS_REGION": "sa-east-1",
+    "AWS_PAGER": "",
+    "SAM_CLI_TELEMETRY": "0"
+  },
+  "enabledMcpjsonServers": ["aws-knowledge", "context7"],
+  "permissions": {
+    "allow": [
+      "Bash(npm test*)",
+      "Bash(npm run test*)",
+      "Bash(npm install*)",
+      "Bash(npm ci*)",
+      "Bash(node --test*)",
+      "Bash(npm run deploy -- dev*)",
+      "Bash(npm run carga -- dev*)",
+      "Bash(sam validate*)",
+      "Bash(sam build*)",
+      "Bash(sam logs*)",
+      "Bash(aws sts get-caller-identity*)",
+      "Bash(aws * describe-*)",
+      "Bash(aws * get-*)",
+      "Bash(aws * list-*)",
+      "Bash(aws cloudformation validate-template*)",
+      "Bash(aws logs tail*)",
+      "Bash(aws logs filter-log-events*)",
+      "Bash(aws logs start-query*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git switch*)",
+      "Bash(git checkout -b*)",
+      "Bash(git branch*)"
+    ],
+    "ask": [
+      "Bash(*guerra-evento*)",
+      "Bash(*-- evento*)",
+      "Bash(*config-env evento*)",
+      "Bash(npm run remover*)",
+      "Bash(sam delete*)",
+      "Bash(aws cloudformation delete-stack*)",
+      "Bash(aws s3 rm*)",
+      "Bash(aws s3 rb*)",
+      "Bash(*orcamento*)",
+      "Bash(aws budgets *)",
+      "Bash(aws service-quotas request-service-quota-increase*)",
+      "Bash(git push*)",
+      "Bash(glab *)"
+    ],
+    "deny": [
+      "Read(~/.aws/credentials)",
+      "Bash(*.aws/credentials*)",
+      "Bash(*.aws\\credentials*)",
+      "Bash(aws configure get*)",
+      "Bash(aws configure set*)",
+      "Bash(aws configure export-credentials*)",
+      "Bash(aws iam create-access-key*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ]
+  }
+}

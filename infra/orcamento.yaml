@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Guerra de Clusters - alerta de orcamento da conta inteira (US$ 1 e US$ 5 de gasto real no mes),
+  sem descontar creditos. Pilha separada do jogo: nao some com "npm run remover".
+
+Parameters:
+  EmailAlerta:
+    Type: String
+    Description: E-mail que recebe os alertas (passado no deploy, fora do repositorio)
+    AllowedPattern: ".+@.+"
+
+Resources:
+  OrcamentoMensal:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: guerra-orcamento-mensal
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 5
+          Unit: USD
+        CostTypes:
+          # Creditos e reembolsos fora: senao o gasto aparece como US$ 0 e o alerta nunca dispara
+          IncludeCredit: false
+          IncludeRefund: false
+          IncludeTax: true
+          IncludeSupport: true
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 1
+            ThresholdType: ABSOLUTE_VALUE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref EmailAlerta
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 5
+            ThresholdType: ABSOLUTE_VALUE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref EmailAlerta

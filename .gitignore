@@ -1,0 +1,8 @@
+node_modules/
+.aws-sam/
+cdk.out/
+__pycache__/
+.env
+*.local
+samconfig.toml
+.claude/settings.local.json
